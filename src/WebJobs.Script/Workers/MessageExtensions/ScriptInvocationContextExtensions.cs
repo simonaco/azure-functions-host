@@ -18,7 +18,7 @@ namespace Microsoft.Azure.WebJobs.Script.Workers
 {
     internal static class ScriptInvocationContextExtensions
     {
-        public static InvocationRequest ToRpcInvocationRequest(this ScriptInvocationContext context, bool isTriggerMetadataPopulatedByWorker, ILogger logger, Capabilities capabilities)
+        public static async Task<InvocationRequest> ToRpcInvocationRequest(this ScriptInvocationContext context, bool isTriggerMetadataPopulatedByWorker, ILogger logger, Capabilities capabilities)
         {
             InvocationRequest invocationRequest = new InvocationRequest()
             {
@@ -35,15 +35,18 @@ namespace Microsoft.Azure.WebJobs.Script.Workers
                     {
                         continue;
                     }
-                    invocationRequest.TriggerMetadata.Add(pair.Key, pair.Value.ToRpc(logger, capabilities));
+
+                    var value = await pair.Value.ToRpc(logger, capabilities);
+                    invocationRequest.TriggerMetadata.Add(pair.Key, value);
                 }
             }
+
             foreach (var input in context.Inputs)
             {
                 invocationRequest.InputData.Add(new ParameterBinding()
                 {
                     Name = input.name,
-                    Data = input.val.ToRpc(logger, capabilities)
+                    Data = await input.val.ToRpc(logger, capabilities)
                 });
             }
 
